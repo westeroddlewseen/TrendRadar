@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  trendradar:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trendradar
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Tokyo
+      - PYTHONUNBUFFERED=1
+      # AI Provider settings (set in .env or override here)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      # Slack / Discord notification settings
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
+      # Crawler settings
+      - CRAWL_INTERVAL_MINUTES=${CRAWL_INTERVAL_MINUTES:-60}
+      - MAX_TRENDS=${MAX_TRENDS:-20}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config:ro
+    networks:
+      - trendradar-net
+
+  # Optional: lightweight scheduler if not using GitHub Actions
+  scheduler:
+    image: mcuadros/ofelia:latest
+    container_name: trendradar-scheduler
+    depends_on:
+      - trendradar
+    command: daemon --docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      ofelia.job-run.trendradar-crawl.schedule: "@every ${CRAWL_INTERVAL_MINUTES:-60}m"
+      ofelia.job-run.trendradar-crawl.container: "trendradar"
+      ofelia.job-run.trendradar-crawl.command: "python main.py --mode crawl"
+    networks:
+      - trendradar-net
+    profiles:
+      - scheduler
+
+networks:
+  trendradar-net:
+    driver: bridge
+
+volumes:
+  data:
+  logs:
