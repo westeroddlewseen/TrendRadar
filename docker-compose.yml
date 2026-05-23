@@ -8,7 +8,7 @@ services:
     container_name: trendradar
     restart: unless-stopped
     environment:
-      - TZ=America/New_York
+      - TZ=Europe/London
       - PYTHONUNBUFFERED=1
       # AI Provider settings (set in .env or override here)
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
@@ -18,7 +18,7 @@ services:
       - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
       # Crawler settings
-      - CRAWL_INTERVAL_MINUTES=${CRAWL_INTERVAL_MINUTES:-30}
+      - CRAWL_INTERVAL_MINUTES=${CRAWL_INTERVAL_MINUTES:-60}
       - MAX_TRENDS=${MAX_TRENDS:-50}
     volumes:
       - ./data:/app/data
@@ -37,7 +37,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     labels:
-      ofelia.job-run.trendradar-crawl.schedule: "@every ${CRAWL_INTERVAL_MINUTES:-30}m"
+      ofelia.job-run.trendradar-crawl.schedule: "@every ${CRAWL_INTERVAL_MINUTES:-60}m"
       ofelia.job-run.trendradar-crawl.container: "trendradar"
       ofelia.job-run.trendradar-crawl.command: "python main.py --mode crawl"
     networks:
